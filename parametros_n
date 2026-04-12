@@ -1,0 +1,60 @@
+import numpy as np
+
+dt=0.01 
+T=10.0
+n=int(T/dt)
+S=100    
+
+#Parámetros 
+a=np.random.uniform(-0.5, 0.5, S)
+w=np.random.uniform(0.0, 5.0, S)
+x0 = np.random.uniform(0, 1, S) * np.exp(1j * np.random.uniform(0, 2*np.pi, S))
+valores_b=[0.0, 0.1, 0.5, 1.0]  # Intensidades de ruido
+valores_K=[0.0, 1.0, 2.5, 5.0] # Fuerzas de acople
+
+def simular_osciladores(b, K):
+    x_t = np.zeros(S, dtype=complex)
+    x_t[:] = x0
+    
+    for _ in range(n):
+        dw = (np.random.normal(0, np.sqrt(dt), S) + 1j * np.random.normal(0, np.sqrt(dt), S))
+        acople_medio = np.mean(x_t)
+        drift=x_t * (a + 1j*w - np.abs(x_t)**2) + K * (acople_medio - x_t)
+        difusion=b* x_t * dw
+        x_t=x_t+(drift * dt) + difusion
+    
+    amps = np.abs(x_t)
+    fases = np.angle(x_t)
+    
+    #Orden de Kuramoto
+    r = np.abs(np.mean(np.exp(1j * fases)))
+    
+    return {
+        'b': b,
+        'K': K,
+        'Mean_Amp': np.mean(amps),
+        'SD_Fase': np.std(fases),
+        'Sincronia': r
+    }
+
+#Tabla 
+print("\n" + "="*75)
+print(f"{'TABLA DE RESULTADOS: SIMULACIÓN STUART-LANDAU':^75}")
+print("="*75)
+# Encabezados
+header = f"{'Ruido (b)':>10} | {'Acople (K)':>10} | {'Amp Media':>12} | {'SD Fase':>12} | {'Sincronía (r)':>12}"
+print(header)
+print("-" * 75)
+
+for b_i in valores_b:
+    for K_i in valores_K:
+        res = simular_osciladores(b_i, K_i)
+        
+        # Formateo de cada fila
+        fila = (f"{res['b']:10.2f} | {res['K']:10.2f} | "
+                f"{res['Mean_Amp']:12.4f} | {res['SD_Fase']:12.4f} | "
+                f"{res['Sincronia']:12.4f}")
+        print(fila)
+
+print("-" * 75)
+print("Nota: Sincronía (r) cercana a 1.00 indica fase coherente.")
