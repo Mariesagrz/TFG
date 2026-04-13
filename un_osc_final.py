@@ -1,79 +1,63 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.cm import get_cmap
+
+#Parámetros
+dt = 0.01  
+T = 100.0   
+n = int(T/dt)
+t = np.linspace(0, T, n)
+
+b = [0.0, 0.1, 0.3, 0.6] 
+a, w = -1.0, 1.0
+x0 = np.random.normal(-0.5, 0.5) + 1j * np.random.normal(0.0, 0.0)
+
+cmap = get_cmap('viridis')
+colores = [cmap(i) for i in np.linspace(0, 0.9, len(b))]
+
+resultados = []
+for b_j in b:
+    x = np.zeros(n, dtype=complex)
+    x[0] = x0
+    for i in range(1, n):
+        dw = (np.random.normal(0, np.sqrt(dt)) + 1j * np.random.normal(0, np.sqrt(dt)))
+        drift = x[i-1] * (a + 1j*w - np.abs(x[i-1])**2) * dt
+        difusion = b_j * x[i-1] * dw
+        x[i] = x[i-1] + drift + difusion
+    
+    
+    fase= np.angle(x) % (2 * np.pi)
+    
+    resultados.append({'b': b_j, 'x': x, 'amp': np.abs(x), 'fase': fase})
 
 
-#tiempo
-dt=0.001
-T=10.0
-n=int(T/dt)
-t=np.linspace(0,T,n)
-
-#vector posicion
-x=np.zeros(n, dtype=complex)
-
-
-#parametros
-b=0.4
-a=10.0
-w=1.0
-x0=np.random.uniform(low=0.0, high=10.0)
-
-
-#funcion de drift y difusion
-def f(a, x, w):
-    return x*(a + 1j*w - np.abs(x)**2)
-
-
-
-#iteracciones
-x[0] = x0
-for i in range(1, n):
-    dw = np.random.normal(0, np.sqrt(dt))
-    x[i] = x[i-1] + (f(a,x[i-1],w)* dt) + (b * x[i-1] * dw)
-
-
-tr=np.zeros((n-50))
-xr=np.zeros((n-50),dtype=complex)
-for i in range(50,n):
-    tr[i-50]=t[i]
-    xr[i-50]=x[i]
-
-#Grafica en complejos
-plt.figure(figsize=(8, 8), dpi=100)
-plt.plot(xr.real, xr.imag, lw=0.6, color='#1f77b4', alpha=0.7, label='Trayectoria SDE')
-plt.title('Simulación de Euler-Maruyama, plano de fase', fontsize=10)
-plt.xlabel('Real', fontsize=10)
-plt.ylabel('Imaginaria', fontsize=10)
-plt.axhline(0, color='black', lw=1) # Línea base
-plt.grid(True, linestyle='--', alpha=0.6)
-plt.legend(loc='upper left', bbox_to_anchor=(1, 1), fontsize='small') # Leyenda fuera
-plt.tight_layout()
-plt.show()
-
-amplitud = np.abs(xr)
-fase = np.angle(xr)
-
-#Grafico amplitu y fase
-
-plt.figure(figsize=(10, 4))
-plt.plot(tr, amplitud, color='crimson', lw=1.2)
-plt.axhline(np.sqrt(a), color='black', ls='--', label='$\sqrt{a}$ (Teórico)')
-plt.title('Evolución de la Amplitud en el Tiempo', fontsize=12)
-plt.xlabel('Tiempo')
-plt.ylabel('Amplitud $|z|$')
+#PLANO DE FASE
+plt.figure(figsize=(7, 7))
+for i, res in enumerate(resultados):
+    plt.plot(res['x'].real, res['x'].imag, color=colores[i], lw=0.7, label=f'b={res["b"]}')
+plt.title('Plano de Fase')
 plt.legend()
 plt.grid(True, alpha=0.3)
-plt.tight_layout()
-plt.show()
 
+#AMPLITUD
 plt.figure(figsize=(10, 4))
-plt.plot(tr, fase, color='forestgreen', lw=1.2)
-plt.title('Evolución de la Fase (Unwrapped)', fontsize=12)
-plt.xlabel('Tiempo')
-plt.ylabel('Fase (rad)')
+for i, res in enumerate(resultados):
+    plt.plot(t, res['amp'], color=colores[i], lw=1.2, label=f'b={res["b"]}')
+plt.title('Amplitud')
+plt.legend()
 plt.grid(True, alpha=0.3)
-plt.tight_layout()
+
+#FASE (0 a 2pi)
+plt.figure(figsize=(10, 4))
+for i, res in enumerate(resultados):
+    plt.plot(t, res['fase'], color=colores[i], lw=1.2, label=f'b={res["b"]}')
+plt.title('Evolución de la Fase (Rango $[0, 2\pi)$)')
+plt.ylabel('Fase (rad)')
+plt.xlabel('Tiempo')
+plt.yticks([0, np.pi/2, np.pi, 3*np.pi/2, 2*np.pi], 
+           ['0', r'$\pi/2$', r'$\pi$', r'$3\pi/2$', r'$2\pi$'])
+plt.ylim(-0.1, 2*np.pi + 0.1)
+plt.legend(loc='upper right')
+plt.grid(True, alpha=0.3)
+
 plt.show()
-#¿se supone que x es un numero complejo?
-#habria que representar solo a partir de un valor
-#comprobar que la media de los valores a partir de ese tiempo esta en el radio que buscamos
